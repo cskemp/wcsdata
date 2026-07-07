@@ -1,0 +1,6 @@
+rawdata
+renv/
+README.md
+.Rprofile
+prepare_data.R
+renv.lock
