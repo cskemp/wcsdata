@@ -78,8 +78,23 @@ message("Reading speaker metadata...")
 spkr_meta <- read_tsv(
   file.path(raw, "spkr-lsas.txt"),
   col_names = c("lang_id", "spkr_id", "age", "sex"),
-  col_types  = "iiic"
-)
+  col_types  = "iicc"
+) |>
+  # Age is messy free text: some values are pure missing markers ("*", "?",
+  # "??", "X", "M"), others are numbers decorated with punctuation/parentheses
+  # ("16(approx)", "16?", "40+", "30-40", "over 60"). Extract the leading
+  # number; treat 0 and anything with no digits as missing.
+  #
+  # Sex is also inconsistent: mixed case ("m"/"f"), stray whitespace ("F "),
+  # "FA" (-> "F"), and missing markers ("*", "?"). Trim, upper-case, fold
+  # "FA" into "F". Show all missing values as a dash in the labels.
+  mutate(
+    age = as.integer(str_extract(age, "[0-9]+")),
+    age = ifelse(is.na(age) | age == 0, "–", as.character(age)),
+    sex = toupper(str_trim(sex)),
+    sex = ifelse(sex == "FA", "F", sex),
+    sex = ifelse(is.na(sex) | sex %in% c("*", "?"), "–", sex)
+  )
 saveRDS(spkr_meta, "data/spkr_meta.rds")
 message(sprintf("  %d speakers saved to data/spkr_meta.rds", nrow(spkr_meta)))
 
