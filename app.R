@@ -183,6 +183,24 @@ ui <- fluidPage(
     .control-label       { font-size: 16px; font-weight: bold; }
     .selectize-input     { font-size: 15px; }
     .selectize-dropdown  { font-size: 15px; }
+  ")),
+  # When embedded in an iframe, report our content height to the parent page so
+  # it can size the iframe to fit (no fixed-height whitespace or inner scrollbar).
+  # Fire on Shiny's render events (a ResizeObserver on body misses the plot
+  # images, which overflow the body box without enlarging it).
+  tags$script(HTML("
+    function wcsSendHeight() {
+      if (window.parent === window) return;
+      // body.scrollHeight is the content height; documentElement.scrollHeight
+      // would include the iframe viewport and cause a resize feedback loop.
+      var h = document.body.scrollHeight;
+      window.parent.postMessage({ wcsHeight: h }, '*');
+    }
+    window.addEventListener('load', wcsSendHeight);
+    window.addEventListener('resize', wcsSendHeight);
+    $(document).on('shiny:value shiny:recalculated shiny:idle', function() {
+      setTimeout(wcsSendHeight, 150);
+    });
   "))),
   titlePanel("World Color Survey"),
   sidebarLayout(
