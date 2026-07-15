@@ -200,7 +200,7 @@ ui <- fluidPage(
     mainPanel(
       width = 10,
       uiOutput("lang_info_bar"),
-      plotOutput("top_maps"),
+      plotOutput("top_maps", height = "auto"),
       hr(),
       tags$h4("Individual speakers", style = "margin-bottom: 2px;"),
       plotOutput("indiv_maps", height = "auto")
@@ -366,7 +366,16 @@ server <- function(input, output, session) {
       p_term | p_avg
     }
   }, height = function() {
-    if (!is.null(input$term) && input$term != "All") 210L else 380L
+    # Size the plot to the maps it holds so they don't float in whitespace.
+    # Each map is coord_fixed with a 10-row x 41-col grid drawn in a 2-column
+    # layout: 2 rows of maps for "All", 1 row when a single term is selected.
+    w <- session$clientData$output_top_maps_width
+    if (is.null(w) || w < 10) {
+      return(if (!is.null(input$term) && input$term != "All") 210L else 380L)
+    }
+    n_rows   <- if (!is.null(input$term) && input$term != "All") 1L else 2L
+    panel_h  <- ((w - 60L) / 2) * (10 / 41)  # per-map panel height, minus axis/spacing
+    as.integer(n_rows * (panel_h + 40L) + 15L)  # +40 per row for title & x-axis labels
   })
 
   # ---------------------------------------------------------------------------
